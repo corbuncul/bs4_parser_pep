@@ -1,3 +1,4 @@
+"""Парсинг информации о версиях Python и PEP."""
 import logging
 import re
 from urllib.parse import urljoin
@@ -13,6 +14,7 @@ from utils import find_tag, get_response
 
 
 def whats_new(session):
+    """Парсинг обновлений."""
     whats_new_url = urljoin(MAIN_DOC_URL, 'whatsnew/')
     response = get_response(session, whats_new_url)
     if response is None:
@@ -21,7 +23,9 @@ def whats_new(session):
     soup = BeautifulSoup(response.text, features='lxml')
     main_div = find_tag(soup, 'section', attrs={'id': 'what-s-new-in-python'})
     div_with_ul = find_tag(main_div, 'div', attrs={'class': 'toctree-wrapper'})
-    sections_by_python = div_with_ul.find_all('li', attrs={'class': 'toctree-l1'})
+    sections_by_python = div_with_ul.find_all(
+        'li', attrs={'class': 'toctree-l1'}
+    )
 
     results = [('Ссылка на статью', 'Заголовок', 'Редактор, автор')]
 
@@ -42,6 +46,7 @@ def whats_new(session):
 
 
 def latest_versions(session):
+    """Парсинг последних версий."""
     response = get_response(session, MAIN_DOC_URL)
     if response is None:
         return
@@ -66,13 +71,12 @@ def latest_versions(session):
             version, status = text_match.groups()
         else:
             version, status = a_tag.text, ''
-        results.append(
-            (link, version, status)
-        )
+        results.append((link, version, status))
     return results
 
 
 def download(session):
+    """Скачивание документации."""
     downloads_url = urljoin(MAIN_DOC_URL, 'download.html')
     response = get_response(session, downloads_url)
     if response is None:
@@ -81,7 +85,9 @@ def download(session):
     soup = BeautifulSoup(response.text, features='lxml')
     main_tag = find_tag(soup, 'div', {'role': 'main'})
     table_tag = find_tag(main_tag, 'table', {'class': 'docutils'})
-    pdf_a4_tag = find_tag(table_tag, 'a', {'href': re.compile(r'.+pdf-a4\.zip$')})
+    pdf_a4_tag = find_tag(
+        table_tag, 'a', {'href': re.compile(r'.+pdf-a4\.zip$')}
+    )
     pdf_a4_link = pdf_a4_tag['href']
     archive_url = urljoin(downloads_url, pdf_a4_link)
     filename = archive_url.split('/')[-1]
@@ -97,6 +103,7 @@ def download(session):
 
 
 def pep(session):
+    """Парсинг иформации о статусах PEP."""
     response = get_response(session, PEP_DOC_URL)
     if response is None:
         return
@@ -119,11 +126,11 @@ def pep(session):
         'Superseded': 0,
         'Withdrawn': 0,
         'Draft': 0,
-        'Total': 0
+        'Total': 0,
     }
     for row in tqdm(rows_tag):
         abbr_tag = find_tag(row, 'abbr')
-        status_in_table = abbr_tag.text[-1] if len(abbr_tag.text) == 2 else ''
+        status_in_table = abbr_tag.text[1:]
         a_tag = find_tag(row, 'a')
         pep_url = urljoin(PEP_DOC_URL, a_tag['href'])
         response = get_response(session, pep_url)
@@ -141,7 +148,9 @@ def pep(session):
             logging.info(
                 'Несовпадающие статусы: %s Статус в карточке: %s '
                 'Ожидаемые статусы: %s',
-                pep_url, status, EXPECTED_STATUS[status_in_table]
+                pep_url,
+                status,
+                *EXPECTED_STATUS[status_in_table],
             )
         if status not in statuses:
             statuses[status] = 1
@@ -163,6 +172,7 @@ MODE_TO_FUNCTION = {
 
 
 def main():
+    """Запуск функций в зависимости от аргументов."""
     configure_logging()
     logging.info('Парсер запущен!')
 
