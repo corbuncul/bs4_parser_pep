@@ -4,7 +4,6 @@ import logging
 import re
 from urllib.parse import urljoin
 
-from requests import RequestException
 import requests_cache
 from tqdm import tqdm
 
