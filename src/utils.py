@@ -5,7 +5,7 @@ import logging
 from bs4 import BeautifulSoup
 from requests import RequestException
 
-from exceptions import GetResponseError, ParsingError, ParserFindTagException
+from exceptions import ParsingError, ParserFindTagException
 
 
 def get_response(session, url, encoding='urf-8'):
@@ -29,9 +29,6 @@ def find_tag(soup, tag, attrs=None):
     return searched_tag
 
 
-def get_soup(session, url):
+def get_soup(session, url, features='lxml'):
     response = get_response(session, url)
-    if response is None:
-        error_msg = f'Ошибка получения ответа от: {url}.'
-        raise GetResponseError(error_msg)
-    return BeautifulSoup(response.text, features='lxml')
+    return BeautifulSoup(response.text, features=features)

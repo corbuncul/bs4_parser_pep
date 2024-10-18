@@ -16,7 +16,7 @@ from constants import (
     PEP_DOC_URL,
     DOWNLOAD_DIR,
 )
-from exceptions import GetResponseError, NothingToParseError
+from exceptions import ParsingError, NothingToParseError
 from outputs import control_output
 from utils import find_tag, get_soup
 
@@ -40,14 +40,14 @@ def whats_new(session):
         version_link = urljoin(whats_new_url, href)
         try:
             soup = get_soup(session, version_link)
-        except (RequestException, GetResponseError) as error:
+        except ParsingError as error:
             error_msg += f'{error}\n'
             continue
         h1 = find_tag(soup, 'h1')
         dl = find_tag(soup, 'dl')
         dl_text = dl.text.replace('\n', ' ')
         results.append((version_link, h1.text, dl_text))
-    if error_msg != '':
+    if error_msg:
         logging.error(error_msg, exc_info=True)
     return results
 
@@ -111,17 +111,7 @@ def pep(session):
         rows_tag.extend(item)
     total = 0
     results = [('Статус', 'Количество')]
-    statuses = {
-        'Active': 0,
-        'Accepted': 0,
-        'Deferred': 0,
-        'Final': 0,
-        'Provisional': 0,
-        'Rejected': 0,
-        'Superseded': 0,
-        'Withdrawn': 0,
-        'Draft': 0,
-    }
+    statuses = {}
     info_msg = ''
     error_msg = ''
     for row in tqdm(rows_tag):
@@ -131,7 +121,7 @@ def pep(session):
         pep_url = urljoin(PEP_DOC_URL, a_tag['href'])
         try:
             soup = get_soup(session, pep_url)
-        except (RequestException, GetResponseError) as error:
+        except ParsingError as error:
             error_msg += f'{error}\n'
             continue
         dl_tag = find_tag(soup, 'dl', {'class': 'rfc2822'})
@@ -149,9 +139,9 @@ def pep(session):
             )
         statuses[status] = statuses.get(status, 0) + 1
         total += 1
-    if error_msg != '':
+    if error_msg:
         logging.error(error_msg, exc_info=True)
-    if info_msg != '':
+    if info_msg:
         logging.info(info_msg)
     results += statuses.items()
     results += [('Total', total)]
