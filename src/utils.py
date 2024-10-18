@@ -1,21 +1,22 @@
-"""Моуль вспомогательных инструментов парсера."""
+"""Модуль вспомогательных инструментов парсера."""
+
 import logging
 
+from bs4 import BeautifulSoup
 from requests import RequestException
 
-from exceptions import ParserFindTagException
+from exceptions import GetResponseError, ParsingError, ParserFindTagException
 
 
-def get_response(session, url):
+def get_response(session, url, encoding='urf-8'):
     """Получение ответа от сервера с обработкой ошибок."""
     try:
         response = session.get(url)
-        response.encoding = 'utf-8'
+        response.encoding = encoding
         return response
-    except RequestException:
-        logging.exception(
-            f'Возникла ошибка при загрузке страницы {url}', stack_info=True
-        )
+    except RequestException as e:
+        error_msg = f'Возникла ошибка при загрузке страницы {url}.'
+        raise ParsingError(error_msg) from e
 
 
 def find_tag(soup, tag, attrs=None):
@@ -26,3 +27,11 @@ def find_tag(soup, tag, attrs=None):
         logging.error(error_msg, stack_info=True)
         raise ParserFindTagException(error_msg)
     return searched_tag
+
+
+def get_soup(session, url):
+    response = get_response(session, url)
+    if response is None:
+        error_msg = f'Ошибка получения ответа от: {url}.'
+        raise GetResponseError(error_msg)
+    return BeautifulSoup(response.text, features='lxml')
