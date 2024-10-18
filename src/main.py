@@ -9,7 +9,7 @@ import requests_cache
 from tqdm import tqdm
 
 from configs import configure_argument_parser, configure_logging
-from constants import EXPECTED_STATUS, MAIN_DOC_URL, PEP_DOC_URL, DOWNLOAD_DIR
+from constants import BASE_DIR, EXPECTED_STATUS, MAIN_DOC_URL, PEP_DOC_URL, DOWNLOAD_DIR
 from exceptions import GetResponseError, NothingToParseError
 from outputs import control_output
 from utils import find_tag, get_soup
@@ -84,8 +84,9 @@ def download(session):
     pdf_a4_link = pdf_a4_tag['href']
     archive_url = urljoin(downloads_url, pdf_a4_link)
     filename = archive_url.split('/')[-1]
-    DOWNLOAD_DIR.mkdir(exist_ok=True)
-    archive_path = DOWNLOAD_DIR / filename
+    download_dir = BASE_DIR / DOWNLOAD_DIR
+    download_dir.mkdir(exist_ok=True)
+    archive_path = download_dir / filename
     response = session.get(archive_url)
 
     with open(archive_path, 'wb') as file:
